@@ -2,13 +2,11 @@ package com.trxade.webservice.controller;
 
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import javax.validation.Valid;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,7 +29,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.trxade.webservice.DO.TrxadeProduct;
 import com.trxade.webservice.repository.TrxadeRepository;
 import com.trxade.webservice.response.TrxadeResponse;
-
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 
@@ -39,8 +36,6 @@ import io.swagger.annotations.ApiOperation;
 @RequestMapping("/trxadeServices")
 @Api(value="TrxadeStore", description="Operations pertaining to products in Trxade")
 public class TrxadeController {
-	/*@Autowired
-	private ServiceCheckResponse serviceCheckResponse;*/
 	
 	@Autowired 
 	private TrxadeRepository repository;
@@ -69,20 +64,6 @@ public class TrxadeController {
 	@Value("${service.grantType}")
 	private String grantType;
 	
-	@ApiOperation(value = "Check if the service is up and running",response = Iterable.class)
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully tested the service availability"),
-            @ApiResponse(code = 401, message = "You are not authorized to view the resource"),
-            @ApiResponse(code = 403, message = "Accessing the resource you were trying to reach is forbidden"),
-            @ApiResponse(code = 404, message = "The resource you were trying to reach is not found")
-    }
-    )
-	@GetMapping(path = "/serviceCheck", produces=MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<?> serviceChecker() throws JSONException {
-		entity = new JSONObject();
-        entity.put("ServerStatus", "Up");
-        return new ResponseEntity<>(entity, HttpStatus.OK);
-	}
 	
 	@ApiOperation(value = "Quick check if the service is up and running",response = Iterable.class)
     @ApiResponses(value = {
@@ -92,7 +73,7 @@ public class TrxadeController {
             @ApiResponse(code = 404, message = "The resource you were trying to reach is not found")
     }
     )
-	@GetMapping(path = "/quickCheck")
+	@GetMapping(path = "/serviceCheck")
 	public String quickServiceChecker() {
         return "Service Up and Running";
 	}
@@ -109,7 +90,6 @@ public class TrxadeController {
 	public ResponseEntity<?> getAllTrxadeProducts()
 	{
 		List<TrxadeProduct> allProducts = repository.getAllProducts( 1,"9998", "53", "3647025", "*ALL", "", " ");
-		System.out.println("TrxadeController.getAllTrxadeProducts() "+allProducts.size());
 		return new ResponseEntity<>(allProducts, HttpStatus.OK);
 	}
 	
@@ -164,18 +144,18 @@ public class TrxadeController {
 	@GetMapping(path="/updateAllTrxadeProductsOnHand")
 	public ResponseEntity<?> updateAllTrxadeProducts_OnHand()
 	{
-		/*System.out.println("TrxadeController.updateAllTrxadeProducts_OnHand() StartTime --- > "+LocalDateTime.now());
+		System.out.println("TrxadeController.updateAllTrxadeProducts_OnHand() StartTime --- > "+LocalDateTime.now());
 		List<TrxadeResponse> responseList = new ArrayList<TrxadeResponse>();
-		List<TrxadeProductOnHand> allProducts = repository.getAllProductsOnHand( 1,"9998", "53", "3647025", "*ALL", "", " ");
-		int totalProducts=allProducts.size();*/
+		List<TrxadeProduct> allProducts = repository.getAllProductsOnHand( 1,"9998", "53", "3647025", "*ALL", "", " ");
+		System.out.println("TrxadeController.updateAllTrxadeProducts_OnHand() Stored Procedure Response Time --- > "+LocalDateTime.now());
+		int totalProducts=allProducts.size();
 		OAuth2RestTemplate restTemplate = getOAuth2RestTemplate();
 		//TrxadeProduct testProduct = new TrxadeProduct("NDC","61556712    ","60505358306    ","Abacavir George2","APOTEX CORP","George product1","300 MG    ","60.00","28.00",new BigDecimal("1.0"),"60505358306         ","36050535836       ","ABACAVIR TAB 300MG            ","0","0",new BigDecimal("1.0"),"");
-		
-		TrxadeProduct testProductOnHand = new TrxadeProduct("NDC","61556712    ","60505358306    ",new BigDecimal("1.0"));
-		//for(int index=0;index<totalProducts;index++) {
-			//responseList.add(updateProductOnHand(allProducts.get(index),restTemplate));
-		TrxadeResponse responseList = updateProductOnHand(testProductOnHand,restTemplate);
-	//}
+		//TrxadeProduct testProductOnHand = new TrxadeProduct("NDC","694794    ","60505358306    ",new BigDecimal("0.0"));
+		for(int index=0;index<totalProducts;index++) {
+			responseList.add(updateProductOnHand(allProducts.get(index),restTemplate));
+		//TrxadeResponse responseList = updateProductOnHand(testProductOnHand,restTemplate);
+	}
 		System.out.println("TrxadeController.updateAllTrxadeProducts_OnHand() End Time --> "+LocalDateTime.now());
 		return new ResponseEntity<>(responseList,HttpStatus.OK);
 	}
@@ -198,26 +178,28 @@ public class TrxadeController {
 	
 	@ApiOperation(value = "Delete a product in Trxade",response = TrxadeResponse.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved list"),
+            @ApiResponse(code = 200, message = "Trxade Product deleted Sucessfully"),
             @ApiResponse(code = 401, message = "You are not authorized to view the resource"),
             @ApiResponse(code = 403, message = "Accessing the resource you were trying to reach is forbidden"),
-            @ApiResponse(code = 404, message = "The resource you were trying to reach is not found")
+            @ApiResponse(code = 404, message = "The resource you were trying to reach is not found"),
+            @ApiResponse(code = 422, message = "Validation Error")
     }
     )
 	@RequestMapping(value = "/deleteTrxadeProduct/", method = RequestMethod.POST)
-	public ResponseEntity<?> deleteTrxadeProduct(@RequestBody List<String> skuNumbers)
+	public ResponseEntity<?> deleteTrxadeProduct(@RequestBody List<TrxadeProduct> productsForDeletion)
 	{
 		OAuth2RestTemplate restTemplate = getOAuth2RestTemplate();
-		TrxadeResponse response = deleteProducts(skuNumbers,restTemplate);
+		TrxadeResponse response = deleteProducts(productsForDeletion,restTemplate);
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 	
 	@ApiOperation(value = "Delete all the products in Trxade",response = Iterable.class)
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully Deleted"),
+            @ApiResponse(code = 200, message = "All Trxade Products deleted Sucessfully"),
             @ApiResponse(code = 401, message = "You are not authorized to view the resource"),
             @ApiResponse(code = 403, message = "Accessing the resource you were trying to reach is forbidden"),
-            @ApiResponse(code = 404, message = "The resource you were trying to reach is not found")
+            @ApiResponse(code = 404, message = "The resource you were trying to reach is not found"),
+            @ApiResponse(code = 422, message = "Validation Error")
     }
     )
 	@PutMapping(path = "/deleteAllTrxadeProducts")
@@ -225,17 +207,17 @@ public class TrxadeController {
 	{
 		List<TrxadeResponse> response=new ArrayList<TrxadeResponse>();
 		List<TrxadeProduct> allProducts = repository.getAllProducts( 1,"9998", "53", "3647025", "*ALL", "", " ");
-		List<String> skuNumbers = new ArrayList<String>();
+		List<TrxadeProduct> productsForDeletion = new ArrayList<TrxadeProduct>();
 		OAuth2RestTemplate restTemplate = getOAuth2RestTemplate();
 		int count=0;
 		for(int index=0;index<=allProducts.size();index++)
 		{
-			skuNumbers.add(allProducts.get(index).getSku());
+			productsForDeletion.add(new TrxadeProduct(allProducts.get(index).getSku()));
 			count++;
 			if(count==50)
 			{
 				count=0;
-				response.add(deleteProducts(skuNumbers,restTemplate));
+				response.add(deleteProducts(productsForDeletion,restTemplate));
 			}
 		}
 		return new ResponseEntity<>(response, HttpStatus.OK);
@@ -271,8 +253,11 @@ public class TrxadeController {
 			{
 				response = addNewProduct(product, restTemplate);
 			}
-			//errorResponse.setData(new TrxadeProductResponsePojo());
-			System.out.println("Product Update Error for SKU Number "+product.getSku()+" Error " +response.getDetail());
+			if(response.getDetail().contains("QuantityForSale") && response.getDetail().contains("notBetween"))
+			{
+				TrxadeProduct productToDelete = new TrxadeProduct(product.getSku());				
+				response = deleteProducts(Arrays.asList(productToDelete), restTemplate);
+			}
 		}
 		catch(Exception ex) {
 			ex.printStackTrace();
@@ -283,7 +268,8 @@ public class TrxadeController {
 	private TrxadeResponse updateProductOnHand(TrxadeProduct product,OAuth2RestTemplate restTemplate) {
 		TrxadeResponse response = null; 
 		try {
-		response = restTemplate.postForObject(String.format(updateProductServiceURL),product,  TrxadeResponse.class);
+			TrxadeProduct productToUpdate = new TrxadeProduct(product.getType(),product.getSku(),product.getNdc(),product.getQuantityForSale());
+		response = restTemplate.postForObject(String.format(updateProductServiceURL),productToUpdate,  TrxadeResponse.class);
 		}
 		catch(HttpClientErrorException ex)
 		{
@@ -292,14 +278,17 @@ public class TrxadeController {
 			response.setStatus(String.valueOf(ex.getRawStatusCode()));
 			response.setTitle(ex.getMessage());
 			response.setType(ex.getStatusCode().getReasonPhrase());
-			
-			if(response.getDetail().contains("SKU_NOT_FOUND_ERROR"))
+			System.out.println("TrxadeController.updateProductOnHand() quantity for sale "+product.getQuantityForSale().toPlainString());
+			if(response.getDetail().contains("SKU_NOT_FOUND_ERROR") && !product.getQuantityForSale().toPlainString().equals("0.00"))
 			{
+				System.out.println("TrxadeController.updateProductOnHand() for sku "+product.getSku()+" quantity for sale is "+product.getQuantityForSale().toPlainString());
 				response = addNewProduct(product, restTemplate);
 			}
-			//errorResponse.setData(new TrxadeProductResponsePojo());
-			System.out.println("Product Update Error for SKU Number "+product.getSku()+" Error " +response.getDetail());
-			//response = errorResponse;
+			if(response.getDetail().contains("QuantityForSale") && response.getDetail().contains("notBetween"))
+			{
+				TrxadeProduct productToDelete = new TrxadeProduct(product.getSku());
+				response = deleteProducts(Arrays.asList(productToDelete), restTemplate);
+			}
 		}
 		catch(Exception ex) {
 			ex.printStackTrace();
@@ -309,24 +298,36 @@ public class TrxadeController {
 	
 	
 private TrxadeResponse addNewProduct(TrxadeProduct product,OAuth2RestTemplate restTemplate) {
-		
+		System.out.println("TrxadeController.addNewProduct() adding new product for sku "+product.getSku());
 		TrxadeResponse response = null; 
 		try {
 		response = restTemplate.postForObject(String.format(addProductServiceURL),product,  TrxadeResponse.class);
 		}
-		catch(Exception ex) {
-			
-			ex.printStackTrace();
+		catch(HttpClientErrorException ex)
+		{
+			response = new TrxadeResponse();
+			response.setDetail(ex.getResponseBodyAsString());
+			response.setStatus(String.valueOf(ex.getRawStatusCode()));
+			response.setTitle(ex.getMessage());
+			response.setType(ex.getStatusCode().getReasonPhrase());
 		}
 		
 		return response;
 	}
 
-private TrxadeResponse deleteProducts(List<String> skuNumbers,OAuth2RestTemplate restTemplate)
+private TrxadeResponse deleteProducts(List<TrxadeProduct> products,OAuth2RestTemplate restTemplate)
 {
 	TrxadeResponse response = null; 
 	try {
-	response = restTemplate.postForObject(String.format(deleteProductServiceURL),skuNumbers,  TrxadeResponse.class);
+		if(products.size()==1)
+		{
+			System.out.println("TrxadeController.deleteProducts() deleting the product with SKU "+products.get(0).getSku());
+			response = restTemplate.postForObject(String.format(deleteProductServiceURL),products.get(0),  TrxadeResponse.class);
+		}
+		else
+		{
+			response = restTemplate.postForObject(String.format(deleteProductServiceURL),products,  TrxadeResponse.class);
+		}
 	}
 	catch(Exception ex) {
 		
@@ -343,7 +344,6 @@ private OAuth2RestTemplate getOAuth2RestTemplate()
 	resourceDetails.setClientSecret(clientSecret);
 	resourceDetails.setGrantType(grantType);
 	//resourceDetails.setScope(Arrays.asList("read","write"));
-	
 	DefaultOAuth2ClientContext clientContext = new DefaultOAuth2ClientContext();
 	OAuth2RestTemplate restTemplate = new OAuth2RestTemplate(resourceDetails,clientContext);
 	restTemplate.setMessageConverters(Arrays.asList(new MappingJackson2HttpMessageConverter()));

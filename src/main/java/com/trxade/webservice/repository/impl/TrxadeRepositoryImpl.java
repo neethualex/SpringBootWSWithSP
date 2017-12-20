@@ -101,15 +101,15 @@ public class TrxadeRepositoryImpl implements TrxadeRepository {
 		
 		List<Object[]> storedProcedureResult = storedProcedure.getResultList();
 		
-		/*return storedProcedureResult.stream().map(result -> new TrxadeProduct(
+		return storedProcedureResult.stream().map(result -> new TrxadeProduct(
 				"NDC", result[65].toString(), result[10].toString(), result[23].toString(), result[25].toString(),
 				result[12].toString(), result[68].toString(), result[16].toString(), result[3].toString(), (BigDecimal)result[9],
-				result[10].toString(), result[11].toString(), "", "", "0",
+				"", "", "", "0", "0",
 				(BigDecimal)result[35], result[21].toString()
-		   )).collect(Collectors.toList());*/
-		
-		return storedProcedureResult.stream().map(result -> new TrxadeProduct(
-				"NDC", result[65].toString(), result[10].toString(), (BigDecimal)result[9]
 		   )).collect(Collectors.toList());
+		
+		/*return storedProcedureResult.stream().map(result -> new TrxadeProduct(
+				"NDC", result[65].toString(), result[10].toString(), (BigDecimal)result[9]
+		   )).collect(Collectors.toList());*/
 	}
 }

@@ -27,6 +27,11 @@ public class TrxadeProduct implements Serializable{
 		this.quantityForSale = quantityForSale;
 	}
 	
+	public TrxadeProduct(String sku) {
+		super();
+		this.sku = sku;
+	}
+	
 	public TrxadeProduct(String type, String sku, String ndc, String tradeName, String manufacturer, String description,
 			String strength, String packageSize, String pricePerItem, BigDecimal quantityForSale, String endDate,
 			String itemExpirationDate, String lotNumber, String repack, String authorizedDistibutor, BigDecimal allocation,
